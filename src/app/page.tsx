@@ -1,103 +1,209 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import React, { useState, useEffect } from 'react';
+import { auth, db } from '../../lib/firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import {
+  collection,
+  addDoc,
+  query,
+  orderBy,
+  onSnapshot,
+  serverTimestamp,
+} from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
+
+const getAIFeedback = async (records: any[]): Promise<string> => {
+  const [latest, ...past] = records;
+  const prompt = `
+あなたは優しいメンタルコーチです。
+以下は1人のユーザーが最近書いた日記の記録です。
+一番上が最新の記録です。今回の記録について140文字以内でコメントしてください。
+ただし、過去の記録も参考にして、この人の前向きな点・頑張っている点・変化の兆しなどを親しみある丁寧な口調（硬さレベル5）で伝えてください。
+最後に「今日も記録ありがとうございます！お疲れ様でした。」と入れてください。
+
+【今回の記録】
+今日の出来事: ${latest.todayEvent}
+印象に残ったこと: ${latest.impression}
+感情: ${latest.emotion}
+気づき: ${latest.insight}
+次にとりたい一歩: ${latest.nextStep}
+
+【過去の記録】
+${past
+    .map(
+      (r, i) => `- 今日の出来事: ${r.todayEvent}
+  印象に残ったこと: ${r.impression}
+  感情: ${r.emotion}
+  気づき: ${r.insight}
+  次にとりたい一歩: ${r.nextStep}`
+    )
+    .join("\n")}
+`;
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.NEXT_PUBLIC_OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-3.5-turbo",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.7,
+    }),
+  });
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content || "AIからのコメントを取得できませんでした。";
+};
+
+const HomePage = () => {
+  const [user, setUser] = useState<any>(null);
+  const [todayEvent, setTodayEvent] = useState('');
+  const [impression, setImpression] = useState('');
+  const [emotion, setEmotion] = useState('');
+  const [insight, setInsight] = useState('');
+  const [nextStep, setNextStep] = useState('');
+  const [records, setRecords] = useState<any[]>([]);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackText, setFeedbackText] = useState('');
+  const router = useRouter();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+        const q = query(collection(db, `users/${currentUser.uid}/records`), orderBy('timestamp', 'desc'));
+        const unsubscribeRecords = onSnapshot(q, (snapshot) => {
+          const fetchedRecords = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setRecords(fetchedRecords);
+        });
+        return () => unsubscribeRecords();
+      } else {
+        setUser(null);
+        router.push('/login');
+      }
+    });
+    return () => unsubscribe();
+  }, [router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    try {
+      const docRef = await addDoc(collection(db, `users/${user.uid}/records`), {
+        todayEvent,
+        impression,
+        emotion,
+        insight,
+        nextStep,
+        timestamp: serverTimestamp(),
+      });
+
+      const latestRecord = {
+        todayEvent,
+        impression,
+        emotion,
+        insight,
+        nextStep,
+      };
+
+      const aiComment = await getAIFeedback([latestRecord, ...records.slice(0, 4)]);
+      setFeedbackText(aiComment);
+      setShowFeedback(true);
+
+      setTodayEvent('');
+      setImpression('');
+      setEmotion('');
+      setInsight('');
+      setNextStep('');
+    } catch (error) {
+      console.error("記録の保存に失敗しました:", error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push('/login');
+    } catch (error) {
+      console.error("ログアウト失敗:", error);
+    }
+  };
+
+  if (user === null) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <p className="text-lg text-gray-700">読み込み中... ログイン状態を確認しています。</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="max-w-6xl mx-auto grid grid-cols-3 gap-6">
+        <div className="col-span-2">
+          <h1 className="text-3xl font-bold mb-6 text-center">今日の記録</h1>
+          <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md space-y-4">
+            {[['今日の出来事', todayEvent, setTodayEvent], ['印象に残ったこと', impression, setImpression], ['感情', emotion, setEmotion], ['気づき', insight, setInsight], ['次にとりたい一歩', nextStep, setNextStep]].map(([label, value, setter], index) => (
+              <div key={index}>
+                <label htmlFor={label as string} className="block text-gray-700 font-semibold mb-1">{label}:</label>
+                <textarea
+                  id={label as string}
+                  value={value as string}
+                  onChange={(e) => (setter as any)(e.target.value)}
+                  rows={3}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                  required
+                />
+              </div>
+            ))}
+            <button type="submit" className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">記録する</button>
+          </form>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          {showFeedback && (
+            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+              <div className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full">
+                <p className="text-gray-800 whitespace-pre-wrap mb-4">{feedbackText}</p>
+                <div className="text-right">
+                  <button
+                    onClick={() => setShowFeedback(false)}
+                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                  >
+                    閉じる
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <button onClick={handleLogout} className="mt-6 w-full bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600">
+            ログアウト
+          </button>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        <div>
+          <h2 className="text-xl font-bold mb-4">過去の記録</h2>
+          <div className="space-y-4">
+            {records.map((record, index) => (
+              <div key={index} className="bg-white p-4 rounded shadow">
+                <p><strong>日付:</strong> {record.timestamp?.toDate().toLocaleString() || '未取得'}</p>
+                <p><strong>今日の出来事:</strong> {record.todayEvent}</p>
+                <p><strong>印象に残ったこと:</strong> {record.impression}</p>
+                <p><strong>感情:</strong> {record.emotion}</p>
+                <p><strong>気づき:</strong> {record.insight}</p>
+                <p><strong>次にとりたい一歩:</strong> {record.nextStep}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
+};
+
+export default function Page() {
+  return <HomePage />;
 }
