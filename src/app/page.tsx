@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { auth, db } from "../../../lib/firebase";
+import { getAuth } from "../../../lib/firebase"; // ← auth と db をここからインポート
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import {
   collection,
@@ -10,7 +10,6 @@ import {
   orderBy,
   onSnapshot,
   serverTimestamp,
-  DocumentData,
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
@@ -83,7 +82,6 @@ const HomePage = () => {
   const [feedbackText, setFeedbackText] = useState("");
   const router = useRouter();
 
-  // ユーザー認証 + データ取得
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
@@ -115,13 +113,12 @@ const HomePage = () => {
     return () => unsubscribe();
   }, [router]);
 
-  // 記録送信
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
     try {
-      const docRef = await addDoc(collection(db, `users/${user.uid}/records`), {
+      await addDoc(collection(db, `users/${user.uid}/records`), {
         todayEvent,
         impression,
         emotion,
@@ -155,7 +152,6 @@ const HomePage = () => {
     }
   };
 
-  // ログアウト処理
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -178,7 +174,6 @@ const HomePage = () => {
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-6xl mx-auto grid grid-cols-3 gap-6">
-        {/* 左：記録入力 */}
         <div className="col-span-2">
           <h1 className="text-3xl font-bold mb-6 text-center">今日の記録</h1>
           <form
@@ -217,7 +212,6 @@ const HomePage = () => {
             </button>
           </form>
 
-          {/* AIフィードバックモーダル */}
           {showFeedback && (
             <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
               <div className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full">
@@ -244,7 +238,6 @@ const HomePage = () => {
           </button>
         </div>
 
-        {/* 右：過去の記録一覧 */}
         <div>
           <h2 className="text-xl font-bold mb-4">過去の記録</h2>
           <div className="space-y-4">
@@ -254,21 +247,11 @@ const HomePage = () => {
                   <strong>日付:</strong>{" "}
                   {record.timestamp?.toDate().toLocaleString() || "未取得"}
                 </p>
-                <p>
-                  <strong>今日の出来事:</strong> {record.todayEvent}
-                </p>
-                <p>
-                  <strong>印象に残ったこと:</strong> {record.impression}
-                </p>
-                <p>
-                  <strong>感情:</strong> {record.emotion}
-                </p>
-                <p>
-                  <strong>気づき:</strong> {record.insight}
-                </p>
-                <p>
-                  <strong>次にとりたい一歩:</strong> {record.nextStep}
-                </p>
+                <p><strong>今日の出来事:</strong> {record.todayEvent}</p>
+                <p><strong>印象に残ったこと:</strong> {record.impression}</p>
+                <p><strong>感情:</strong> {record.emotion}</p>
+                <p><strong>気づき:</strong> {record.insight}</p>
+                <p><strong>次にとりたい一歩:</strong> {record.nextStep}</p>
               </div>
             ))}
           </div>

@@ -21,15 +21,14 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@lib/*": ["./src/lib/*"]
+      "@lib/*": ["./lib/*"]  // ← ここを修正
     }
   },
   "include": [
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts",
-    "next.config.js"
+    ".next/types/**/*.ts"
   ],
   "exclude": ["node_modules"]
 }
