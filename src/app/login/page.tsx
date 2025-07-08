@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword, Auth } from "firebase/auth";
-import { getAuth } from '../lib/firebase';
 
 interface FirebaseError extends Error {
   code?: string;

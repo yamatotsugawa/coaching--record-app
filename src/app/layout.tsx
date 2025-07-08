@@ -9,17 +9,20 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <head>
-        {/* Tailwind CSS CDNの追加 */}
-        <script src="https://cdn.tailwindcss.com"></script>
-        {/* Interフォントの追加（Tailwindと相性が良い） */}
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-        <style>
-          {`
-            body {
-              font-family: 'Inter', sans-serif;
-            }
-          `}
-        </style>
+        {/*
+          Next.jsのApp Routerでは、同期スクリプト（例: Tailwind CSS CDNの<script>タグ）や
+          <head>タグ内でのカスタムフォントの直接追加（例: Google Fontsの<link>タグ）は推奨されません。
+          これらはビルドエラーやパフォーマンスの問題を引き起こす可能性があります。
+
+          - Tailwind CSSは、通常プロジェクトにインストールし、`globals.css`に`@tailwind`ディレクティブを追加して使用します。
+            CDNを使用する場合は、`next/script`コンポーネントを`strategy="beforeInteractive"`または`"lazyOnload"`で使用するか、
+            `async`または`defer`属性を追加する必要がありますが、ベストプラクティスはプロジェクトへのインストールです。
+          - Google Fontsのようなカスタムフォントは、`globals.css`に`@import`ルールで追加するか、
+            Next.jsの`next/font`モジュールを使用するのが最適です。
+
+          エラー解消のため、ここでは直接的な<script>タグと<link>タグ、<style>ブロックを削除します。
+          これらの設定は、Next.jsの推奨する方法で別途行ってください。
+        */}
       </head>
       <body>{children}</body>
     </html>
