@@ -1,8 +1,12 @@
+/** @type {import('tailwindcss').Config} */
 module.exports = {
-  // PostCSSプラグインを設定します。
-  // Tailwind CSSとAutoprefixerは通常ここに含めます。
-  plugins: {
-    tailwindcss: {}, // Tailwind CSSプラグインを有効にします
-    autoprefixer: {}, // ベンダープレフィックスを自動追加するAutoprefixerを有効にします
+  content: [
+    "./app/**/*.{js,ts,jsx,tsx}",
+    "./pages/**/*.{js,ts,jsx,tsx}",
+    "./components/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {},
   },
+  plugins: [],
 }

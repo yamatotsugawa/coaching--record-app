@@ -1,26 +1,21 @@
-    // src/app/layout.tsx
-    import './globals.css'; // グローバルCSSのインポート
+import './globals.css';
+import { Inter } from 'next/font/google';
 
-    // Next.jsのnext/font/googleからInterフォントをインポート
-    import { Inter } from 'next/font/google';
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
-    // Interフォントのロード
-    const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+export const metadata = {
+  title: '記録アプリ',
+  description: '日々の記録とAIフィードバック',
+};
 
-    export default function RootLayout({
-      children,
-    }: {
-      children: React.ReactNode;
-    }) {
-      return (
-        <html lang="ja">
-          <head>
-            {/* headタグ内は最小限に。CSSは通常import './globals.css'でバンドルされます。 */}
-          </head>
-          {/* bodyにInterフォントのクラスを適用 */}
-          {/* Tailwind CSSでfont-interを使用できるようにします */}
-          <body className={`${inter.variable} font-sans`}>{children}</body>
-        </html>
-      );
-    }
-    
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="ja">
+      <body className={`${inter.variable} font-sans`}>{children}</body>
+    </html>
+  );
+}
