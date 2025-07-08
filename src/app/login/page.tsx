@@ -25,17 +25,25 @@ export default function LoginPage() {
       }
       await signInWithEmailAndPassword(auth, email, birthday);
       router.push('/');
-    } catch (error: any) { // このanyもunknownに修正した方が良いですが、今回はgetAuthのエラー解消を優先します
+    } catch (error: unknown) { // 修正点: 'any' を 'unknown' に変更
       let errorMessage = "ログインに失敗しました。";
-      if (error.code === 'auth/invalid-email') {
-        errorMessage = "メールアドレスの形式が正しくありません。";
-      } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-        errorMessage = "メールアドレスまたは誕生日が間違っています。";
-      } else if (error.code === 'auth/too-many-requests') {
-        errorMessage = "短時間にログイン試行が多すぎます。しばらくしてからお試しください。";
+      // error が Error インスタンスであるかを確認
+      if (error instanceof Error) {
+        // Firebase Auth エラーの場合、error.code を確認
+        if ('code' in error && typeof error.code === 'string') {
+          if (error.code === 'auth/invalid-email') {
+            errorMessage = "メールアドレスの形式が正しくありません。";
+          } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+            errorMessage = "メールアドレスまたは誕生日が間違っています。";
+          } else if (error.code === 'auth/too-many-requests') {
+            errorMessage = "短時間にログイン試行が多すぎます。しばらくしてからお試しください。";
+          }
+        }
+        console.error("ログインエラー:", error.message);
+      } else {
+        console.error("ログインエラー: 不明なエラー", error);
       }
       setError(errorMessage);
-      console.error("ログインエラー:", error.message);
     }
   };
 
