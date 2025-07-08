@@ -2,11 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signInWithEmailAndPassword, Auth } from "firebase/auth";
-
-interface FirebaseError extends Error {
-  code?: string;
-}
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from '@lib/firebase'; // Firebase Authのインスタンスを正しくインポート
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,38 +11,31 @@ export default function LoginPage() {
   const [birthday, setBirthday] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const auth: Auth = getAuth();
+  // 修正点: 'const auth: Auth = getAuth();' の行を削除
+  // 'auth' は既に '@lib/firebase' からインポートされており、
+  // ここで再度 'getAuth()' を呼び出す必要はありません。
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
-    
     try {
       if (birthday.length < 6) {
         setError("誕生日（パスワード）は6文字以上で入力してください。");
         return;
       }
-
       await signInWithEmailAndPassword(auth, email, birthday);
       router.push('/');
-    } catch (error) {
+    } catch (error: any) { // このanyもunknownに修正した方が良いですが、今回はgetAuthのエラー解消を優先します
       let errorMessage = "ログインに失敗しました。";
-      
-      const firebaseError = error as FirebaseError;
-      
-      if (firebaseError.code === 'auth/invalid-email') {
+      if (error.code === 'auth/invalid-email') {
         errorMessage = "メールアドレスの形式が正しくありません。";
-      } else if (
-        firebaseError.code === 'auth/user-not-found' ||
-        firebaseError.code === 'auth/wrong-password'
-      ) {
+      } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
         errorMessage = "メールアドレスまたは誕生日が間違っています。";
-      } else if (firebaseError.code === 'auth/too-many-requests') {
+      } else if (error.code === 'auth/too-many-requests') {
         errorMessage = "短時間にログイン試行が多すぎます。しばらくしてからお試しください。";
       }
-
       setError(errorMessage);
-      console.error("ログインエラー:", firebaseError.message);
+      console.error("ログインエラー:", error.message);
     }
   };
 
