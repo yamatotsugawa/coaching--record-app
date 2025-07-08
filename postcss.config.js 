@@ -1,0 +1,8 @@
+module.exports = {
+  // PostCSSプラグインを設定します。
+  // Tailwind CSSとAutoprefixerは通常ここに含めます。
+  plugins: {
+    tailwindcss: {}, // Tailwind CSSプラグインを有効にします
+    autoprefixer: {}, // ベンダープレフィックスを自動追加するAutoprefixerを有効にします
+  },
+}
