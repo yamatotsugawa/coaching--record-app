@@ -10,8 +10,8 @@ import {
   orderBy,
   onSnapshot,
   serverTimestamp,
-  // 修正点1: DocumentData を削除 (使用されていないため)
-  // DocumentData,
+  Timestamp, // 修正点1: Timestamp型をインポート
+  // DocumentData, // 修正済み: 使用されていないためコメントアウト
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
@@ -23,11 +23,8 @@ type RecordType = {
   emotion: string;
   insight: string;
   nextStep: string;
-  // 修正点2: timestampの型をFirestoreのTimestamp型に近づける（またはanyのまま許容）
-  // FirestoreのTimestamp型は 'firebase/firestore' からインポートできますが、
-  // ここではシンプルにDate型またはanyのままとして、エラーを解消します。
-  // 厳密にはTimestamp型を使うべきですが、ESLintエラー解消を優先します。
-  timestamp?: Date | any;
+  // 修正点2: timestampの型をFirestoreのTimestamp型に修正
+  timestamp?: Timestamp; // anyを削除し、Timestamp型を使用
 };
 
 // AIコメント生成関数
@@ -141,8 +138,6 @@ const HomePage = () => {
     if (!user) return;
 
     try {
-      // 修正点3: docRef は使用しないため、宣言を削除するかコメントアウト
-      // const docRef = await addDoc(collection(db, `users/${user.uid}/records`), {
       await addDoc(collection(db, `users/${user.uid}/records`), {
         todayEvent,
         impression,
@@ -173,15 +168,12 @@ const HomePage = () => {
       setInsight("");
       setNextStep("");
     } catch (error: unknown) {
-      // 修正点4: errorMessage を const で定義し、使用されていない警告を解消
-      const errorMessage = "記録の保存に失敗しました。"; // const に変更
+      const errorMessage = "記録の保存に失敗しました。";
       if (error instanceof Error) {
         console.error(errorMessage, error.message);
-        // 必要に応じて、error.message をユーザーに表示する
       } else {
         console.error(errorMessage, "不明なエラー", error);
       }
-      // エラーメッセージをユーザーに表示するロジックがあればここに追加
     }
   };
 
@@ -191,8 +183,7 @@ const HomePage = () => {
       await signOut(auth);
       router.push("/login");
     } catch (error: unknown) {
-      // 修正点5: errorMessage を const で定義し、使用されていない警告を解消
-      const errorMessage = "ログアウト失敗:"; // const に変更
+      const errorMessage = "ログアウト失敗:";
       if (error instanceof Error) {
         console.error(errorMessage, error.message);
       } else {
