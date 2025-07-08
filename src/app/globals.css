@@ -1,33 +1,34 @@
-/* Interフォントのインポートを一番上に追加 */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    /* Interフォントのインポートを一番上に追加 */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-/* Tailwind CSSのディレクティブ */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+    /* Tailwind CSSのディレクティブ */
+    @tailwind base;
+    @tailwind components;
+    @tailwind utilities;
 
-/* その他の既存のCSSはそのまま残す */
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+    /* その他の既存のCSSはそのまま残す */
+    :root {
+      --background: #ffffff;
+      --foreground: #171717;
+    }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans); /* 必要に応じてInterに合わせるか削除 */
-  --font-mono: var(--font-geist-mono); /* 必要に応じてInterに合わせるか削除 */
-}
+    @theme inline {
+      --color-background: var(--background);
+      --color-foreground: var(--foreground);
+      --font-sans: var(--font-geist-sans); /* 必要に応じてInterに合わせるか削除 */
+      --font-mono: var(--font-geist-mono); /* 必要に応じてInterに合わせるか削除 */
+    }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: #0a0a0a;
+        --foreground: #ededed;
+      }
+    }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: 'Inter', sans-serif; /* Interフォントを適用 */
-}
+    body {
+      background: var(--background);
+      color: var(--foreground);
+      font-family: 'Inter', sans-serif; /* Interフォントを適用 */
+    }
+    
