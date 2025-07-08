@@ -195,26 +195,26 @@ const HomePage = () => {
             onSubmit={handleSubmit}
             className="bg-white p-6 rounded-lg shadow-md space-y-4"
           >
-            {[
+            {/* 修正点: mapで処理する配列自体に型を明示的に指定 */}
+            {([
               ["今日の出来事", todayEvent, setTodayEvent],
               ["印象に残ったこと", impression, setImpression],
               ["感情", emotion, setEmotion],
               ["気づき", insight, setInsight],
               ["次にとりたい一歩", nextStep, setNextStep],
-            ].map(
-              // 修正点: mapのコールバック引数に明示的に型を指定
-              ([label, value, setter]: [string, string, React.Dispatch<React.SetStateAction<string>>], index) => (
+            ] as [string, string, React.Dispatch<React.SetStateAction<string>>][]).map(
+              ([label, value, setter], index) => (
                 <div key={index}>
                   <label
-                    htmlFor={label} // labelはstring型なのでas stringは不要
+                    htmlFor={label}
                     className="block text-gray-700 font-semibold mb-1"
                   >
                     {label}:
                   </label>
                   <textarea
-                    id={label} // labelはstring型なのでas stringは不要
-                    value={value} // valueはstring型なのでas stringは不要
-                    onChange={(e) => setter(e.target.value)} // setterの型が明示されたのでas React.Dispatch<...>は不要
+                    id={label}
+                    value={value}
+                    onChange={(e) => setter(e.target.value)}
                     rows={3}
                     className="w-full p-2 border border-gray-300 rounded-md"
                     required
