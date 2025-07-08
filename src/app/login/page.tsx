@@ -11,10 +11,6 @@ export default function LoginPage() {
   const [birthday, setBirthday] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  // 修正点: 'const auth: Auth = getAuth();' の行を削除
-  // 'auth' は既に '@lib/firebase' からインポートされており、
-  // ここで再度 'getAuth()' を呼び出す必要はありません。
-
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
@@ -25,11 +21,9 @@ export default function LoginPage() {
       }
       await signInWithEmailAndPassword(auth, email, birthday);
       router.push('/');
-    } catch (error: unknown) { // 修正点: 'any' を 'unknown' に変更
+    } catch (error: unknown) {
       let errorMessage = "ログインに失敗しました。";
-      // error が Error インスタンスであるかを確認
       if (error instanceof Error) {
-        // Firebase Auth エラーの場合、error.code を確認
         if ('code' in error && typeof error.code === 'string') {
           if (error.code === 'auth/invalid-email') {
             errorMessage = "メールアドレスの形式が正しくありません。";
@@ -48,21 +42,45 @@ export default function LoginPage() {
   };
 
   return (
-    <form onSubmit={handleLogin}>
-      <input
-        type="email"
-        placeholder="メールアドレス"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-      <input
-        type="password"
-        placeholder="誕生日（パスワード）"
-        value={birthday}
-        onChange={(e) => setBirthday(e.target.value)}
-      />
-      <button type="submit">ログイン</button>
-      {error && <p style={{ color: "red" }}>{error}</p>}
-    </form>
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <form onSubmit={handleLogin} className="bg-white p-8 rounded-lg shadow-md w-full max-w-sm">
+        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">ログイン</h2>
+        <div className="mb-4">
+          <label htmlFor="email" className="block text-gray-700 text-sm font-bold mb-2">
+            メールアドレス:
+          </label>
+          <input
+            type="email"
+            id="email"
+            placeholder="メールアドレス"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            required
+          />
+        </div>
+        <div className="mb-6">
+          <label htmlFor="password" className="block text-gray-700 text-sm font-bold mb-2">
+            誕生日（パスワード）:
+          </label>
+          <input
+            type="password"
+            id="password"
+            placeholder="誕生日（パスワード）"
+            value={birthday}
+            onChange={(e) => setBirthday(e.target.value)}
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
+            required
+          />
+        </div>
+        <button
+          type="submit"
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
+        >
+          ログイン
+        </button>
+        {error && <p className="text-red-500 text-xs italic mt-4 text-center">{error}</p>}
+      </form>
+    </div>
   );
 }

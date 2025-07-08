@@ -1,12 +1,6 @@
-/** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [
-    "./app/**/*.{js,ts,jsx,tsx}",
-    "./pages/**/*.{js,ts,jsx,tsx}",
-    "./components/**/*.{js,ts,jsx,tsx}",
-  ],
-  theme: {
-    extend: {},
+  plugins: {
+    tailwindcss: {}, // Tailwind CSSプラグインを有効にします
+    autoprefixer: {}, // ベンダープレフィックスを自動追加するAutoprefixerを有効にします
   },
-  plugins: [],
 }
