@@ -10,8 +10,7 @@ import {
   orderBy,
   onSnapshot,
   serverTimestamp,
-  Timestamp, // 修正点1: Timestamp型をインポート
-  // DocumentData, // 修正済み: 使用されていないためコメントアウト
+  Timestamp,
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
@@ -23,8 +22,7 @@ type RecordType = {
   emotion: string;
   insight: string;
   nextStep: string;
-  // 修正点2: timestampの型をFirestoreのTimestamp型に修正
-  timestamp?: Timestamp; // anyを削除し、Timestamp型を使用
+  timestamp?: Timestamp;
 };
 
 // AIコメント生成関数
@@ -56,21 +54,6 @@ ${past
     .join("\n")}
 `;
 
-  // Gemini APIを使用する場合の例 (OpenAI APIの代わりに)
-  // const apiKey = ""; // Canvas環境では自動的に提供されます
-  // const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-  // const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-
-  // const response = await fetch(apiUrl, {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify(payload)
-  // });
-  // const result = await response.json();
-  // return result.candidates?.[0]?.content?.parts?.[0]?.text || "AIからのコメントを取得できませんでした。";
-
-
-  // 現在のOpenAI APIのコード
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -218,24 +201,27 @@ const HomePage = () => {
               ["感情", emotion, setEmotion],
               ["気づき", insight, setInsight],
               ["次にとりたい一歩", nextStep, setNextStep],
-            ].map(([label, value, setter], index) => (
-              <div key={index}>
-                <label
-                  htmlFor={label as string}
-                  className="block text-gray-700 font-semibold mb-1"
-                >
-                  {label}:
-                </label>
-                <textarea
-                  id={label as string}
-                  value={value as string}
-                  onChange={(e) => (setter as React.Dispatch<React.SetStateAction<string>>)(e.target.value)}
-                  rows={3}
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                  required
-                />
-              </div>
-            ))}
+            ].map(
+              // 修正点: mapのコールバック引数に明示的に型を指定
+              ([label, value, setter]: [string, string, React.Dispatch<React.SetStateAction<string>>], index) => (
+                <div key={index}>
+                  <label
+                    htmlFor={label} // labelはstring型なのでas stringは不要
+                    className="block text-gray-700 font-semibold mb-1"
+                  >
+                    {label}:
+                  </label>
+                  <textarea
+                    id={label} // labelはstring型なのでas stringは不要
+                    value={value} // valueはstring型なのでas stringは不要
+                    onChange={(e) => setter(e.target.value)} // setterの型が明示されたのでas React.Dispatch<...>は不要
+                    rows={3}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                    required
+                  />
+                </div>
+              )
+            )}
             <button
               type="submit"
               className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
