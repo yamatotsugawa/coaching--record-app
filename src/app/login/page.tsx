@@ -2,8 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { getAuth } from '../lib/firebase'; // ← alias 経由でOK
+import { signInWithEmailAndPassword, Auth } from "firebase/auth";
+import { getAuth } from '../lib/firebase';
+
+interface FirebaseError extends Error {
+  code?: string;
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -11,11 +15,12 @@ export default function LoginPage() {
   const [birthday, setBirthday] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const auth = getAuth(); // 🔧 追加された部分
+  const auth: Auth = getAuth();
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
+    
     try {
       if (birthday.length < 6) {
         setError("誕生日（パスワード）は6文字以上で入力してください。");
@@ -24,22 +29,24 @@ export default function LoginPage() {
 
       await signInWithEmailAndPassword(auth, email, birthday);
       router.push('/');
-    } catch (error: any) {
+    } catch (error) {
       let errorMessage = "ログインに失敗しました。";
-
-      if (error.code === 'auth/invalid-email') {
+      
+      const firebaseError = error as FirebaseError;
+      
+      if (firebaseError.code === 'auth/invalid-email') {
         errorMessage = "メールアドレスの形式が正しくありません。";
       } else if (
-        error.code === 'auth/user-not-found' ||
-        error.code === 'auth/wrong-password'
+        firebaseError.code === 'auth/user-not-found' ||
+        firebaseError.code === 'auth/wrong-password'
       ) {
         errorMessage = "メールアドレスまたは誕生日が間違っています。";
-      } else if (error.code === 'auth/too-many-requests') {
+      } else if (firebaseError.code === 'auth/too-many-requests') {
         errorMessage = "短時間にログイン試行が多すぎます。しばらくしてからお試しください。";
       }
 
       setError(errorMessage);
-      console.error("ログインエラー:", error.message);
+      console.error("ログインエラー:", firebaseError.message);
     }
   };
 

@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getAuth } from "../../../lib/firebase"; // ← auth と db をここからインポート
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import { getAuth } from './lib/firebase'; // ← 正しいパスに修正
+import { onAuthStateChanged, signOut, Auth, User } from "firebase/auth";
 import {
   collection,
   addDoc,
