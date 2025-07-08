@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { getAuth } from '../../../lib/firebase'; // ← alias 経由でOK
+import { getAuth } from '../lib/firebase'; // ← alias 経由でOK
 
 export default function LoginPage() {
   const router = useRouter();
