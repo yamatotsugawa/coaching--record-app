@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
+import { auth, db } from "@lib/firebase";
+// 修正点1: getAuth と User を削除 (使用されていないため)
+import { onAuthStateChanged, signOut, User } from "firebase/auth"; // Userは後で型として使うので残します
 import {
   collection,
   addDoc,
@@ -9,6 +11,7 @@ import {
   orderBy,
   onSnapshot,
   serverTimestamp,
+  DocumentData,
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
@@ -20,7 +23,7 @@ type RecordType = {
   emotion: string;
   insight: string;
   nextStep: string;
-  timestamp?: any;
+  timestamp?: any; // timestampはFirestoreのTimestamp型にするのが理想ですが、anyでも動作します
 };
 
 // AIコメント生成関数
@@ -52,6 +55,21 @@ ${past
     .join("\n")}
 `;
 
+  // Gemini APIを使用する場合の例 (OpenAI APIの代わりに)
+  // const apiKey = ""; // Canvas環境では自動的に提供されます
+  // const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  // const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+
+  // const response = await fetch(apiUrl, {
+  //   method: 'POST',
+  //   headers: { 'Content-Type': 'application/json' },
+  //   body: JSON.stringify(payload)
+  // });
+  // const result = await response.json();
+  // return result.candidates?.[0]?.content?.parts?.[0]?.text || "AIからのコメントを取得できませんでした。";
+
+
+  // 現在のOpenAI APIのコード
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -70,7 +88,8 @@ ${past
 };
 
 const HomePage = () => {
-  const [user, setUser] = useState<any>(null);
+  // 修正点2: userの型を 'any' から 'User | null' に変更
+  const [user, setUser] = useState<User | null>(null);
   const [todayEvent, setTodayEvent] = useState("");
   const [impression, setImpression] = useState("");
   const [emotion, setEmotion] = useState("");
@@ -81,8 +100,10 @@ const HomePage = () => {
   const [feedbackText, setFeedbackText] = useState("");
   const router = useRouter();
 
+  // ユーザー認証 + データ取得
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      // currentUser は User | null 型なので、そのまま使用できます
       if (currentUser) {
         setUser(currentUser);
 
@@ -112,12 +133,13 @@ const HomePage = () => {
     return () => unsubscribe();
   }, [router]);
 
+  // 記録送信
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
     try {
-      await addDoc(collection(db, `users/${user.uid}/records`), {
+      const docRef = await addDoc(collection(db, `users/${user.uid}/records`), {
         todayEvent,
         impression,
         emotion,
@@ -146,17 +168,30 @@ const HomePage = () => {
       setEmotion("");
       setInsight("");
       setNextStep("");
-    } catch (error) {
-      console.error("記録の保存に失敗しました:", error);
+    } catch (error: unknown) { // 修正点3: errorの型を 'any' から 'unknown' に変更
+      let errorMessage = "記録の保存に失敗しました。";
+      if (error instanceof Error) {
+        console.error("記録の保存に失敗しました:", error.message);
+        // 必要に応じて、error.message をユーザーに表示する
+      } else {
+        console.error("記録の保存に失敗しました: 不明なエラー", error);
+      }
+      // エラーメッセージをユーザーに表示するロジックがあればここに追加
     }
   };
 
+  // ログアウト処理
   const handleLogout = async () => {
     try {
       await signOut(auth);
       router.push("/login");
-    } catch (error) {
-      console.error("ログアウト失敗:", error);
+    } catch (error: unknown) { // 修正点4: errorの型を 'any' から 'unknown' に変更
+      let errorMessage = "ログアウト失敗:";
+      if (error instanceof Error) {
+        console.error(errorMessage, error.message);
+      } else {
+        console.error(errorMessage, "不明なエラー", error);
+      }
     }
   };
 
@@ -173,6 +208,7 @@ const HomePage = () => {
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-6xl mx-auto grid grid-cols-3 gap-6">
+        {/* 左：記録入力 */}
         <div className="col-span-2">
           <h1 className="text-3xl font-bold mb-6 text-center">今日の記録</h1>
           <form
@@ -196,7 +232,8 @@ const HomePage = () => {
                 <textarea
                   id={label as string}
                   value={value as string}
-                  onChange={(e) => (setter as any)(e.target.value)}
+                  // 修正点5: setterの型を明示的に指定し、anyキャストを削除
+                  onChange={(e) => (setter as React.Dispatch<React.SetStateAction<string>>)(e.target.value)}
                   rows={3}
                   className="w-full p-2 border border-gray-300 rounded-md"
                   required
@@ -211,6 +248,7 @@ const HomePage = () => {
             </button>
           </form>
 
+          {/* AIフィードバックモーダル */}
           {showFeedback && (
             <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
               <div className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full">
@@ -237,6 +275,7 @@ const HomePage = () => {
           </button>
         </div>
 
+        {/* 右：過去の記録一覧 */}
         <div>
           <h2 className="text-xl font-bold mb-4">過去の記録</h2>
           <div className="space-y-4">
@@ -246,11 +285,21 @@ const HomePage = () => {
                   <strong>日付:</strong>{" "}
                   {record.timestamp?.toDate().toLocaleString() || "未取得"}
                 </p>
-                <p><strong>今日の出来事:</strong> {record.todayEvent}</p>
-                <p><strong>印象に残ったこと:</strong> {record.impression}</p>
-                <p><strong>感情:</strong> {record.emotion}</p>
-                <p><strong>気づき:</strong> {record.insight}</p>
-                <p><strong>次にとりたい一歩:</strong> {record.nextStep}</p>
+                <p>
+                  <strong>今日の出来事:</strong> {record.todayEvent}
+                </p>
+                <p>
+                  <strong>印象に残ったこと:</strong> {record.impression}
+                </p>
+                <p>
+                  <strong>感情:</strong> {record.emotion}
+                </p>
+                <p>
+                  <strong>気づき:</strong> {record.insight}
+                </p>
+                <p>
+                  <strong>次にとりたい一歩:</strong> {record.nextStep}
+                </p>
               </div>
             ))}
           </div>
