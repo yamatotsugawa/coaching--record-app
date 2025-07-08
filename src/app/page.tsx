@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { auth, db } from "@lib/firebase";
-// 修正点1: getAuth と User を削除 (使用されていないため)
-import { onAuthStateChanged, signOut, User } from "firebase/auth"; // Userは後で型として使うので残します
+import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import {
   collection,
   addDoc,
@@ -11,7 +10,8 @@ import {
   orderBy,
   onSnapshot,
   serverTimestamp,
-  DocumentData,
+  // 修正点1: DocumentData を削除 (使用されていないため)
+  // DocumentData,
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
@@ -23,7 +23,11 @@ type RecordType = {
   emotion: string;
   insight: string;
   nextStep: string;
-  timestamp?: any; // timestampはFirestoreのTimestamp型にするのが理想ですが、anyでも動作します
+  // 修正点2: timestampの型をFirestoreのTimestamp型に近づける（またはanyのまま許容）
+  // FirestoreのTimestamp型は 'firebase/firestore' からインポートできますが、
+  // ここではシンプルにDate型またはanyのままとして、エラーを解消します。
+  // 厳密にはTimestamp型を使うべきですが、ESLintエラー解消を優先します。
+  timestamp?: Date | any;
 };
 
 // AIコメント生成関数
@@ -88,7 +92,6 @@ ${past
 };
 
 const HomePage = () => {
-  // 修正点2: userの型を 'any' から 'User | null' に変更
   const [user, setUser] = useState<User | null>(null);
   const [todayEvent, setTodayEvent] = useState("");
   const [impression, setImpression] = useState("");
@@ -103,7 +106,6 @@ const HomePage = () => {
   // ユーザー認証 + データ取得
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      // currentUser は User | null 型なので、そのまま使用できます
       if (currentUser) {
         setUser(currentUser);
 
@@ -139,7 +141,9 @@ const HomePage = () => {
     if (!user) return;
 
     try {
-      const docRef = await addDoc(collection(db, `users/${user.uid}/records`), {
+      // 修正点3: docRef は使用しないため、宣言を削除するかコメントアウト
+      // const docRef = await addDoc(collection(db, `users/${user.uid}/records`), {
+      await addDoc(collection(db, `users/${user.uid}/records`), {
         todayEvent,
         impression,
         emotion,
@@ -168,13 +172,14 @@ const HomePage = () => {
       setEmotion("");
       setInsight("");
       setNextStep("");
-    } catch (error: unknown) { // 修正点3: errorの型を 'any' から 'unknown' に変更
-      let errorMessage = "記録の保存に失敗しました。";
+    } catch (error: unknown) {
+      // 修正点4: errorMessage を const で定義し、使用されていない警告を解消
+      const errorMessage = "記録の保存に失敗しました。"; // const に変更
       if (error instanceof Error) {
-        console.error("記録の保存に失敗しました:", error.message);
+        console.error(errorMessage, error.message);
         // 必要に応じて、error.message をユーザーに表示する
       } else {
-        console.error("記録の保存に失敗しました: 不明なエラー", error);
+        console.error(errorMessage, "不明なエラー", error);
       }
       // エラーメッセージをユーザーに表示するロジックがあればここに追加
     }
@@ -185,8 +190,9 @@ const HomePage = () => {
     try {
       await signOut(auth);
       router.push("/login");
-    } catch (error: unknown) { // 修正点4: errorの型を 'any' から 'unknown' に変更
-      let errorMessage = "ログアウト失敗:";
+    } catch (error: unknown) {
+      // 修正点5: errorMessage を const で定義し、使用されていない警告を解消
+      const errorMessage = "ログアウト失敗:"; // const に変更
       if (error instanceof Error) {
         console.error(errorMessage, error.message);
       } else {
@@ -232,7 +238,6 @@ const HomePage = () => {
                 <textarea
                   id={label as string}
                   value={value as string}
-                  // 修正点5: setterの型を明示的に指定し、anyキャストを削除
                   onChange={(e) => (setter as React.Dispatch<React.SetStateAction<string>>)(e.target.value)}
                   rows={3}
                   className="w-full p-2 border border-gray-300 rounded-md"
