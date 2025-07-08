@@ -54,4 +54,3 @@ export default function LoginPage() {
     </form>
   );
 }
-export default LoginPage;
